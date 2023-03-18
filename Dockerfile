@@ -27,7 +27,7 @@ RUN pip install -q -r requirements.txt
 
 ENV VOLUME_CONFIG_PATH="${configPath}/volumes.yaml"
 
-COPY volume-setup.py .
+COPY deploy-samba-server.py .
 COPY entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]
