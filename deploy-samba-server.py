@@ -109,7 +109,7 @@ class SambaServerDeployment:
             })
 
         # TODO does this work?
-        fd.write(yaml.dump(deployment))
+        yaml.dump(deployment, fd)
 
 
     def process(self):
