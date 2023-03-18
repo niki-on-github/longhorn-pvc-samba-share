@@ -3,6 +3,9 @@ import os
 import sys
 import time
 import yaml
+import tempfile
+
+from kubernetes import client, config
 
 
 class SambaServerDeployment:
@@ -10,8 +13,11 @@ class SambaServerDeployment:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         volumes_config_path = os.getenv('VOLUMES_CONFIG_PATH', '/config/volumes.yaml')
+        self.deployment_name = "longhorn-pvc-samba-server"
         self.logger.info("VOLUMES_CONFIG_PATH=%s", volumes_config_path)
         self._load_config(volumes_config_path)
+        config.load_kube_config()
+        self.apps_v1 = client.AppsV1Api()
 
 
     def _wait_start_delay(self) -> None:
@@ -48,9 +54,68 @@ class SambaServerDeployment:
                 raise KeyError(f"'{k}' is not defined in volumes config")
 
 
-    def create_deployment(self):
+    def generate_deployment_file(self, fd):
+        deployment = {
+            "apiVersion": "apps/v1",
+            "klind": "Deployment",
+            "meta": {
+                "name": self.deployment_name,
+                "namespace": self.config["metadata"]["namespace"]
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "matchLabels": {
+                        "app": self.deployment_name
+                    }
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": self.deployment_name
+                        }
+                    },
+                    "spec": {
+                        "restartPolicy": "Always",
+                        "containers": [{
+                            "image": "traefik/traefikee-webapp-demo",
+                            "imagePullPolicy": "IfNotPresent",
+                            "name": self.deployment_name
+                        }]
+                    }
+                }
+            }
+        }
+
+        # TODO does this work?
+        fd.write(yaml.dump(deployment))
+
+
+    def process(self):
         self._wait_start_delay()
+        self.delete_deployment(self.config["metadata"]["namespace"], self.deployment_name)
+        with tempfile.NamedTemporaryFile(suffix='.yaml') as tmp:
+            self.create_deployment(self.config["metadata"]["namespace"], tmp.name)
         time.sleep(1)
+
+
+    def delete_deployment(self, namespace, name):
+        _ = self.apps_v1.delete_namespaced_deployment(
+            name=name,
+            namespace=namespace,
+            body=client.V1DeleteOptions(
+                propagation_policy="Foreground", grace_period_seconds=5
+            ),
+        )
+        self.logger.info("Deployment %s deleted.", name)
+
+
+    def create_deployment(self, namespace, file_path):
+        with open(file_path) as f:
+            dep = yaml.safe_load(f)
+            _ = self.apps_v1.create_namespaced_deployment(
+                body=dep, namespace=namespace)
+            self.logger.info("Deployment created")
 
 
 def setup_logging():
@@ -66,4 +131,4 @@ def setup_logging():
 if __name__ == "__main__":
     setup_logging()
     samba_server = SambaServerDeployment()
-    samba_server.create_deployment()
+    samba_server.process()
