@@ -78,7 +78,7 @@ class SambaServerDeployment:
                     "spec": {
                         "restartPolicy": "Always",
                         "containers": [{
-                            "image": "traefik/traefikee-webapp-demo",
+                            "image": "traefik/traefikee-webapp-demo", # TODO change this later to our samba image
                             "imagePullPolicy": "IfNotPresent",
                             "name": self.deployment_name,
                             "volumeMounts": []
