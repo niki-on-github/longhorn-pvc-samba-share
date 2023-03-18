@@ -80,12 +80,33 @@ class SambaServerDeployment:
                         "containers": [{
                             "image": "traefik/traefikee-webapp-demo",
                             "imagePullPolicy": "IfNotPresent",
-                            "name": self.deployment_name
-                        }]
+                            "name": self.deployment_name,
+                            "volumeMounts": []
+                        }],
+                        "volumes": []
                     }
                 }
             }
         }
+
+        for k in self.config["spec"]["volumes"]:
+            if "createPVC" not in self.config["spec"]["volumes"][k]:
+                continue
+
+            if not self.config["spec"]["volumes"][k]["createPVC"]:
+                continue
+
+            deployment["spec"]["template"]["spec"]["volumes"].append({
+                "name": k,
+                "persistentVolumeClaim": {
+                    "claimName": k
+                }
+            })
+
+            deployment["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append({
+                "mountPath": "/samba/" + k,
+                "name": k
+            })
 
         # TODO does this work?
         fd.write(yaml.dump(deployment))
