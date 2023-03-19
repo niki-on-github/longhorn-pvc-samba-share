@@ -123,6 +123,7 @@ class SambaServerDeployment:
         self._wait_start_delay()
         self.delete_deployment(self.deployment_namespace, self.deployment_name)
         with tempfile.NamedTemporaryFile(suffix='.yaml') as tmp:
+            self.generate_deployment_file(tmp)
             self.create_deployment(self.deployment_namespace, tmp.name)
         time.sleep(1)
 
