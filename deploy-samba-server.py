@@ -56,7 +56,7 @@ class SambaServerDeployment:
                 raise KeyError(f"'{k}' is not defined in volumes config")
 
 
-    def generate_deployment_file(self, fd):
+    def generate_deployment_file(self, dest_name):
         deployment = {
             "apiVersion": "apps/v1",
             "klind": "Deployment",
@@ -114,16 +114,16 @@ class SambaServerDeployment:
                 "name": k
             })
 
-        # TODO does this work?
-        yaml.dump(deployment, fd)
-        os.system("cat {}".format(fd.name))
+        with open(dest_name, 'w') as f:
+            yaml.dump(deployment, f)
+        os.system("cat {}".format(dest_name))
 
 
     def process(self):
         self._wait_start_delay()
         self.delete_deployment(self.deployment_namespace, self.deployment_name)
         with tempfile.NamedTemporaryFile(suffix='.yaml') as tmp:
-            self.generate_deployment_file(tmp)
+            self.generate_deployment_file(tmp.name)
             self.create_deployment(self.deployment_namespace, tmp.name)
         time.sleep(1)
 
@@ -136,17 +136,20 @@ class SambaServerDeployment:
         #         propagation_policy="Foreground", grace_period_seconds=5
         #     ),
         # )
+
+        os.system(f"kubectl delete deployment --namespace={namespace} {name}")
         self.logger.info("Deployment %s deleted.", name)
 
 
     def create_deployment(self, namespace, file_path):
-        os.system(f"kubectl apply -f {file_path}")
-        self.logger.info("Deployment created")
         # with open(file_path) as f:
             # dep = yaml.safe_load(f)
             # _ = self.apps_v1.create_namespaced_deployment(
             #     body=dep, namespace=namespace)
-            # self.logger.info("Deployment created")
+
+        os.system(f"kubectl apply -f {file_path}")
+        self.logger.info("Deployment created")
+
 
 
 def setup_logging():
