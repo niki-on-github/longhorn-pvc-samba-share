@@ -16,6 +16,7 @@ class SambaServerDeployment:
         self.deployment_name = "longhorn-pvc-samba-server"
         self.deployment_namespace = os.getenv('NAMESPACE', "default")
         self.logger.info("VOLUMES_CONFIG_PATH=%s", volumes_config_path)
+        self.logger.info("NAMESPACE=%s", self.deployment_namespace)
         self._load_config(volumes_config_path)
         config.load_kube_config()
         self.apps_v1 = client.AppsV1Api()
