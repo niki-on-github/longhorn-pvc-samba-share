@@ -60,7 +60,7 @@ class SambaServerDeployment:
         deployment = {
             "apiVersion": "apps/v1",
             "kind": "Deployment",
-            "meta": {
+            "metadata": {
                 "name": self.deployment_name,
                 "namespace": self.deployment_namespace
             },
