@@ -5,7 +5,7 @@ import time
 import yaml
 import tempfile
 
-from kubernetes import client, config
+# from kubernetes import client, config
 
 
 class SambaServerDeployment:
@@ -18,8 +18,8 @@ class SambaServerDeployment:
         self.logger.info("VOLUMES_CONFIG_PATH=%s", volumes_config_path)
         self.logger.info("NAMESPACE=%s", self.deployment_namespace)
         self._load_config(volumes_config_path)
-        config.load_kube_config()
-        self.apps_v1 = client.AppsV1Api()
+        # config.load_kube_config()
+        # self.apps_v1 = client.AppsV1Api()
 
 
     def _wait_start_delay(self) -> None:
@@ -128,22 +128,24 @@ class SambaServerDeployment:
 
 
     def delete_deployment(self, namespace, name):
-        _ = self.apps_v1.delete_namespaced_deployment(
-            name=name,
-            namespace=namespace,
-            body=client.V1DeleteOptions(
-                propagation_policy="Foreground", grace_period_seconds=5
-            ),
-        )
+        # _ = self.apps_v1.delete_namespaced_deployment(
+        #     name=name,
+        #     namespace=namespace,
+        #     body=client.V1DeleteOptions(
+        #         propagation_policy="Foreground", grace_period_seconds=5
+        #     ),
+        # )
         self.logger.info("Deployment %s deleted.", name)
 
 
     def create_deployment(self, namespace, file_path):
-        with open(file_path) as f:
-            dep = yaml.safe_load(f)
-            _ = self.apps_v1.create_namespaced_deployment(
-                body=dep, namespace=namespace)
-            self.logger.info("Deployment created")
+        os.system(f"kubectl apply -f {file_path}")
+        self.logger.info("Deployment created")
+        # with open(file_path) as f:
+            # dep = yaml.safe_load(f)
+            # _ = self.apps_v1.create_namespaced_deployment(
+            #     body=dep, namespace=namespace)
+            # self.logger.info("Deployment created")
 
 
 def setup_logging():
