@@ -115,6 +115,7 @@ class SambaServerDeployment:
 
         # TODO does this work?
         yaml.dump(deployment, fd)
+        os.system("cat {}".format(fd.name))
 
 
     def process(self):
