@@ -14,6 +14,7 @@ class SambaServerDeployment:
         self.logger = logging.getLogger(__name__)
         volumes_config_path = os.getenv('VOLUMES_CONFIG_PATH', '/config/volumes.yaml')
         self.deployment_name = "longhorn-pvc-samba-server"
+        self.deployment_namespace = os.getenv('NAMESPACE', "default")
         self.logger.info("VOLUMES_CONFIG_PATH=%s", volumes_config_path)
         self._load_config(volumes_config_path)
         config.load_kube_config()
@@ -60,7 +61,7 @@ class SambaServerDeployment:
             "klind": "Deployment",
             "meta": {
                 "name": self.deployment_name,
-                "namespace": self.config["metadata"]["namespace"]
+                "namespace": self.deployment_namespace
             },
             "spec": {
                 "replicas": 1,
@@ -90,10 +91,14 @@ class SambaServerDeployment:
         }
 
         for k in self.config["spec"]["volumes"]:
-            if "createPVC" not in self.config["spec"]["volumes"][k]:
+            if any(x not in self.config["spec"]["volumes"][k] for x in ["createPVC", "namespace"]):
                 continue
 
             if not self.config["spec"]["volumes"][k]["createPVC"]:
+                continue
+
+            if self.config["spec"]["volumes"][k]["namespace"] != self.deployment_namespace:
+                self.logger.info("cross namespace not implemented, skip pvc %s", k)
                 continue
 
             deployment["spec"]["template"]["spec"]["volumes"].append({
@@ -114,9 +119,9 @@ class SambaServerDeployment:
 
     def process(self):
         self._wait_start_delay()
-        self.delete_deployment(self.config["metadata"]["namespace"], self.deployment_name)
+        self.delete_deployment(self.deployment_namespace, self.deployment_name)
         with tempfile.NamedTemporaryFile(suffix='.yaml') as tmp:
-            self.create_deployment(self.config["metadata"]["namespace"], tmp.name)
+            self.create_deployment(self.deployment_namespace, tmp.name)
         time.sleep(1)
 
 
