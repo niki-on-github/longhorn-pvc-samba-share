@@ -4,22 +4,40 @@ import sys
 import time
 import yaml
 import tempfile
+import jinja2
 
-# from kubernetes import client, config
 
 
 class SambaServerDeployment:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        volumes_config_path = os.getenv('VOLUMES_CONFIG_PATH', '/config/volumes.yaml')
-        self.deployment_name = "longhorn-pvc-samba-server"
-        self.deployment_namespace = os.getenv('NAMESPACE', "default")
-        self.logger.info("VOLUMES_CONFIG_PATH=%s", volumes_config_path)
-        self.logger.info("NAMESPACE=%s", self.deployment_namespace)
-        self._load_config(volumes_config_path)
-        # config.load_kube_config()
-        # self.apps_v1 = client.AppsV1Api()
+        self._load_environment_variables()
+        self._load_volumes_config()
+        self._load_helmrelease_template()
+
+
+    def _load_environment_variables(self):
+        self.env = {
+            "IMAGE_REPOSITORY": os.getenv("IMAGE_REPOSITORY", "ghcr.io/crazy-max/samba"),
+            "IMAGE_TAG": os.getenv("IMAGE_TAG", "4.16.8"),
+            "BJWS_CHART_VERSION": os.getenv("BJWS_CHART_VERSION", "1.3.2"),
+            "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "longhorn-samba"),
+            "AFFINITY_HOSTNAME": os.getenv("AFFINITY_HOSTNAME", "")
+        }
+
+        for item in ["SVC_SAMBA_IP", "SAMBA_PASSWORD", "NAMESPACE"]:
+            value = os.getenv(item, None)
+            if value is None:
+                raise ValueError(f"The env var '{item}' is required")
+            self.env[item] = value
+
+
+    def _load_helmrelease_template(self):
+        templateLoader = jinja2.FileSystemLoader(searchpath="./")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        template = templateEnv.get_template("template.yaml.j2")
+        self.helm_release = yaml.safe_load(template.render(**self.env))
 
 
     def _wait_start_delay(self) -> None:
@@ -29,12 +47,14 @@ class SambaServerDeployment:
             time.sleep(start_delay_in_seconds)
 
 
-    def _load_config(self, config_path: str) -> None:
-        with open(config_path, 'r') as fd:
+    def _load_volumes_config(self) -> None:
+        volumes_config_path = os.getenv('VOLUMES_CONFIG_PATH', '/config/volumes.yaml')
+        self.logger.info("VOLUMES_CONFIG_PATH=%s", volumes_config_path)
+        with open(volumes_config_path, 'r') as fd:
             try:
                 self.config = yaml.safe_load(fd)
             except yaml.YAMLError as e:
-                self.logger.error('Parse volume config %s FAILED', config_path)
+                self.logger.error('Parse volume config %s FAILED', volumes_config_path)
                 raise e
 
         self.logger.debug("volume config: %s", str(self.config))
@@ -56,41 +76,7 @@ class SambaServerDeployment:
                 raise KeyError(f"'{k}' is not defined in volumes config")
 
 
-    def generate_deployment_file(self, dest_name):
-        deployment = {
-            "apiVersion": "apps/v1",
-            "kind": "Deployment",
-            "metadata": {
-                "name": self.deployment_name,
-                "namespace": self.deployment_namespace
-            },
-            "spec": {
-                "replicas": 1,
-                "selector": {
-                    "matchLabels": {
-                        "app": self.deployment_name
-                    }
-                },
-                "template": {
-                    "metadata": {
-                        "labels": {
-                            "app": self.deployment_name
-                        }
-                    },
-                    "spec": {
-                        "restartPolicy": "Always",
-                        "containers": [{
-                            "image": "traefik/traefikee-webapp-demo", # TODO change this later to our samba image
-                            "imagePullPolicy": "IfNotPresent",
-                            "name": self.deployment_name,
-                            "volumeMounts": []
-                        }],
-                        "volumes": []
-                    }
-                }
-            }
-        }
-
+    def generate_helmrelease_file(self, dest_name):
         for k in self.config["spec"]["volumes"]:
             if any(x not in self.config["spec"]["volumes"][k] for x in ["createPVC", "namespace"]):
                 continue
@@ -98,58 +84,57 @@ class SambaServerDeployment:
             if not self.config["spec"]["volumes"][k]["createPVC"]:
                 continue
 
-            if self.config["spec"]["volumes"][k]["namespace"] != self.deployment_namespace:
+            if self.config["spec"]["volumes"][k]["namespace"] != self.env["NAMESPACE"]:
                 self.logger.info("cross namespace not implemented, skip pvc %s", k)
                 continue
 
-            deployment["spec"]["template"]["spec"]["volumes"].append({
-                "name": k,
-                "persistentVolumeClaim": {
-                    "claimName": k
-                }
-            })
+            self.helm_release["spec"]["values"]["persistence"][k] = {
+                "enabled": True,
+                "type": "pvc",
+                "existingClaim": k,
+                "mountPath": "/srv/" + k
+            }
 
-            deployment["spec"]["template"]["spec"]["containers"][0]["volumeMounts"].append({
-                "mountPath": "/samba/" + k,
-                "name": k
-            })
+        if self.env["AFFINITY_HOSTNAME"] != "":
+            self.helm_release["spec"]["values"]["affinity"] = {
+                "nodeAffinity":{
+                    "requiredDuringSchedulingIgnoredDuringExecution": {
+                        "nodeSelectorTerms": [{
+                            "matchExpressions": [{
+                                "key": "kubernetes.io/hostname",
+                                "operator": "In",
+                                "values": [
+                                    self.env["AFFINITY_HOSTNAME"]
+                                ]
+                                }]
+                            }]
+                        }
+                    }
+                }
 
         with open(dest_name, 'w') as f:
-            yaml.dump(deployment, f)
+            yaml.dump(self.helm_release, f)
+
         os.system("cat {}".format(dest_name))
 
 
     def process(self):
         self._wait_start_delay()
-        self.delete_deployment(self.deployment_namespace, self.deployment_name)
+        self.delete_helmrelease(self.env["NAMESPACE"], self.env["HELMRELEASE_NAME"])
         with tempfile.NamedTemporaryFile(suffix='.yaml') as tmp:
-            self.generate_deployment_file(tmp.name)
-            self.create_deployment(self.deployment_namespace, tmp.name)
+            self.generate_helmrelease_file(tmp.name)
+            self.apply_helmrelease(tmp.name)
         time.sleep(1)
 
 
-    def delete_deployment(self, namespace, name):
-        # _ = self.apps_v1.delete_namespaced_deployment(
-        #     name=name,
-        #     namespace=namespace,
-        #     body=client.V1DeleteOptions(
-        #         propagation_policy="Foreground", grace_period_seconds=5
-        #     ),
-        # )
-
+    def delete_helmrelease(self, namespace, name):
         os.system(f"kubectl delete deployment --namespace={namespace} {name}")
-        self.logger.info("Deployment %s deleted.", name)
+        self.logger.info("HelmRelease %s deleted.", name)
 
 
-    def create_deployment(self, namespace, file_path):
-        # with open(file_path) as f:
-            # dep = yaml.safe_load(f)
-            # _ = self.apps_v1.create_namespaced_deployment(
-            #     body=dep, namespace=namespace)
-
+    def apply_helmrelease(self, file_path):
         os.system(f"kubectl apply -f {file_path}")
-        self.logger.info("Deployment created")
-
+        self.logger.info("HelmRelease created")
 
 
 def setup_logging():

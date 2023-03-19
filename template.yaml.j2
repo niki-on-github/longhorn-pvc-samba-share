@@ -1,0 +1,77 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: "{{ HELMRELEASE_NAME }}"
+  namespace: "{{ NAMESPACE }}"
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: "{{ BJWS_CHART_VERSION }}"
+      interval: 1h
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s-charts
+        namespace: flux-system
+
+  values:
+    global:
+      nameOverride: longhorn-samba
+
+    image:
+      repository: "{{ IMAGE_REPOSITORY }}"
+      tag: "{{ IMAGE_TAG }}"
+
+    service:
+      main:
+        ports:
+          http:
+            enabled: false
+          samba:
+            enabled: true
+            port: 445
+            protocol: TCP
+        externalTrafficPolicy: Local
+        type: LoadBalancer
+        externalIPs:
+          - "{{ SVC_SAMBA_IP }}"
+
+    configMaps:
+      config:
+        enabled: true
+        data:
+          config.yml: |
+            auth:
+              - user: smb
+                group: smb
+                uid: 0
+                gid: 0
+                password: "{{ SAMBA_PASSWORD }}"
+
+            global:
+              - "force user = smb"
+              - "force group = smb"
+
+            share:
+              - name: samba
+                path: /srv
+                browsable: yes
+                readonly: no
+                guestok: no
+                validusers: smb
+                writelist: smb
+                veto: no
+
+    persistence:
+      data:
+        enabled: true
+        type: emptyDir
+        mountPath: /data
+      data-config:
+        enabled: true
+        type: configMap
+        mountPath: /data/config.yml
+        name: samba-config
+        subPath: config.yml
+
