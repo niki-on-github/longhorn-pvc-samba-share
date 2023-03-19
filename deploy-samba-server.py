@@ -59,7 +59,7 @@ class SambaServerDeployment:
     def generate_deployment_file(self, dest_name):
         deployment = {
             "apiVersion": "apps/v1",
-            "klind": "Deployment",
+            "kind": "Deployment",
             "meta": {
                 "name": self.deployment_name,
                 "namespace": self.deployment_namespace
