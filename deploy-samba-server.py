@@ -23,7 +23,8 @@ class SambaServerDeployment:
             "IMAGE_TAG": os.getenv("IMAGE_TAG", "4.16.8"),
             "BJWS_CHART_VERSION": os.getenv("BJWS_CHART_VERSION", "1.3.2"),
             "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "longhorn-samba"),
-            "AFFINITY_HOSTNAME": os.getenv("AFFINITY_HOSTNAME", "")
+            "AFFINITY_HOSTNAME": os.getenv("AFFINITY_HOSTNAME", ""),
+            "ADDITIONAL_HOST_VOLUME_PATHS": os.getenv("ADDITIONAL_HOST_VOLUME_PATHS", "").split(";")
         }
 
         for item in ["SVC_SAMBA_IP", "SAMBA_PASSWORD", "NAMESPACE"]:
@@ -95,9 +96,20 @@ class SambaServerDeployment:
                 "mountPath": "/srv/" + k
             }
 
+
         if self.env["AFFINITY_HOSTNAME"] != "":
+            for k in self.env["ADDITIONAL_HOST_VOLUME_PATHS"]:
+                if len(k) > 1:
+                    basename = os.path.basename(k)
+                    self.helm_release["spec"]["values"]["persistence"][basename] = {
+                        "enabled": True,
+                        "type": "hostPath",
+                        "hostPath": k,
+                        "mountPath": "/srv/" + basename
+                    }
+
             self.helm_release["spec"]["values"]["affinity"] = {
-                "nodeAffinity":{
+                "nodeAffinity": {
                     "requiredDuringSchedulingIgnoredDuringExecution": {
                         "nodeSelectorTerms": [{
                             "matchExpressions": [{
@@ -128,6 +140,7 @@ class SambaServerDeployment:
 
 
     def delete_helmrelease(self, namespace, name):
+        os.system(f"kubectl delete HelmRelease --namespace={namespace} {name}")
         os.system(f"kubectl delete deployment --namespace={namespace} {name}")
         self.logger.info("HelmRelease %s deleted.", name)
 
