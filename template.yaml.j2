@@ -72,6 +72,6 @@ spec:
         enabled: true
         type: configMap
         mountPath: /data/config.yml
-        name: samba-config
+        name: "{{ HELMRELEASE_NAME }}-config"
         subPath: config.yml
 
