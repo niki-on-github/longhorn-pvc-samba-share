@@ -104,7 +104,7 @@ class SambaServerDeployment:
                 if len(k) > 1:
                     basename = os.path.basename(k)
                     self.logger.info("add aditional host volume %s:%s", basename, k)
-                    self.helm_release["spec"]["values"]["persistence"][basename] = {
+                    self.helm_release["spec"]["values"]["persistence"]["host-volume-"+basename] = {
                         "enabled": True,
                         "type": "hostPath",
                         "hostPath": k,
