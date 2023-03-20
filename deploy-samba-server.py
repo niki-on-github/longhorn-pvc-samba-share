@@ -95,7 +95,7 @@ class SambaServerDeployment:
                 "enabled": True,
                 "type": "pvc",
                 "existingClaim": k,
-                "mountPath": "/srv/" + k
+                "mountPath": "/srv/longhorn/" + k
             }
 
 
@@ -108,7 +108,7 @@ class SambaServerDeployment:
                         "enabled": True,
                         "type": "hostPath",
                         "hostPath": k,
-                        "mountPath": "/srv/host-volume-" + basename
+                        "mountPath": "/srv/host-volume/" + basename
                     }
 
             self.helm_release["spec"]["values"]["affinity"] = {
