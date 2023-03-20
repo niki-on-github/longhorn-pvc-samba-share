@@ -64,11 +64,7 @@ spec:
                 veto: no
 
     persistence:
-      data:
-        enabled: true
-        type: emptyDir
-        mountPath: /data
-      data-config:
+      samba-config:
         enabled: true
         type: configMap
         mountPath: /data/config.yml
