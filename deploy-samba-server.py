@@ -108,7 +108,7 @@ class SambaServerDeployment:
                         "enabled": True,
                         "type": "hostPath",
                         "hostPath": k,
-                        "mountPath": "/srv/" + basename
+                        "mountPath": "/srv/host-volume-" + basename
                     }
 
             self.helm_release["spec"]["values"]["affinity"] = {
