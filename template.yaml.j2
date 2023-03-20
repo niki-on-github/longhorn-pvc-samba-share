@@ -17,7 +17,7 @@ spec:
 
   values:
     global:
-      nameOverride: longhorn-samba
+      nameOverride: "{{ HELMRELEASE_NAME }}"
 
     image:
       repository: "{{ IMAGE_REPOSITORY }}"
