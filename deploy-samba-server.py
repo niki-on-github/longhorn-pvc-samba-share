@@ -33,6 +33,8 @@ class SambaServerDeployment:
                 raise ValueError(f"The env var '{item}' is required")
             self.env[item] = value
 
+        self.logger.debug("env vars = %s", str(self.env))
+
 
     def _load_helmrelease_template(self):
         templateLoader = jinja2.FileSystemLoader(searchpath="./")
