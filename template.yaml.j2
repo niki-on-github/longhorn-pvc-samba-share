@@ -37,6 +37,11 @@ spec:
         externalIPs:
           - "{{ SVC_SAMBA_IP }}"
 
+    securityContext:
+      capabilities:
+        add: ["SYS_ADMIN", "SETPCAP"]
+      privileged: true
+
     configMaps:
       config:
         enabled: true
