@@ -32,7 +32,7 @@ spec:
             enabled: true
             port: 445
             protocol: TCP
-        externalTrafficPolicy: Local
+        externalTrafficPolicy: Cluster
         type: LoadBalancer
         externalIPs:
           - "{{ SVC_SAMBA_IP }}"
