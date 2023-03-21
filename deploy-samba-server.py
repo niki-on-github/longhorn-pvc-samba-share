@@ -30,9 +30,6 @@ class SambaServerDeployment:
         if len(self.env["HELMRELEASE_NAME"]) > 13:
             raise ValueError("The value for HELMRELEASE_NAME can max have 13 characters")
 
-        if "-" in self.env["HELMRELEASE_NAME"]:
-            raise ValueError("caracter `-` not allowed in samba helm release name")
-
         for item in ["SVC_SAMBA_IP", "SAMBA_PASSWORD", "NAMESPACE"]:
             value = os.getenv(item, None)
             if value is None:
