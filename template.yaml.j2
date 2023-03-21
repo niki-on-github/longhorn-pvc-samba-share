@@ -37,11 +37,6 @@ spec:
         externalIPs:
           - "{{ SVC_SAMBA_IP }}"
 
-    securityContext:
-      capabilities:
-        add: ["SYS_ADMIN", "SETPCAP"]
-      privileged: true
-
     hostname: "{{ HELMRELEASE_NAME }}"
 
     configMaps:
@@ -57,8 +52,8 @@ spec:
                 password: "{{ SAMBA_PASSWORD }}"
 
             global:
-              - "force user = smb"
-              - "force group = smb"
+              - "force user = root"
+              - "force group = root"
 
             share:
               - name: samba
@@ -66,8 +61,8 @@ spec:
                 browsable: yes
                 readonly: no
                 guestok: no
-                validusers: smb
-                writelist: smb
+                validusers: root
+                writelist: root
                 veto: no
 
     persistence:
