@@ -22,13 +22,16 @@ class SambaServerDeployment:
             "IMAGE_REPOSITORY": os.getenv("IMAGE_REPOSITORY", "ghcr.io/crazy-max/samba"),
             "IMAGE_TAG": os.getenv("IMAGE_TAG", "4.16.8"),
             "BJWS_CHART_VERSION": os.getenv("BJWS_CHART_VERSION", "1.3.2"),
-            "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "longhorn-smb"),
+            "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "samba"),
             "AFFINITY_HOSTNAME": os.getenv("AFFINITY_HOSTNAME", ""),
             "ADDITIONAL_HOST_VOLUME_PATHS": os.getenv("ADDITIONAL_HOST_VOLUME_PATHS", "").split(";")
         }
 
         if len(self.env["HELMRELEASE_NAME"]) > 13:
             raise ValueError("The value for HELMRELEASE_NAME can max have 13 characters")
+
+        if "-" in self.env["HELMRELEASE_NAME"]:
+            raise ValueError("caracter `-` not allowed in samba helm release name")
 
         for item in ["SVC_SAMBA_IP", "SAMBA_PASSWORD", "NAMESPACE"]:
             value = os.getenv(item, None)
