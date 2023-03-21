@@ -22,7 +22,7 @@ class SambaServerDeployment:
             "IMAGE_REPOSITORY": os.getenv("IMAGE_REPOSITORY", "ghcr.io/crazy-max/samba"),
             "IMAGE_TAG": os.getenv("IMAGE_TAG", "4.16.8"),
             "BJWS_CHART_VERSION": os.getenv("BJWS_CHART_VERSION", "1.3.2"),
-            "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "samba"),
+            "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "lh-samba"),
             "AFFINITY_HOSTNAME": os.getenv("AFFINITY_HOSTNAME", ""),
             "ADDITIONAL_HOST_VOLUME_PATHS": os.getenv("ADDITIONAL_HOST_VOLUME_PATHS", "").split(";")
         }
