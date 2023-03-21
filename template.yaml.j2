@@ -42,6 +42,8 @@ spec:
         add: ["SYS_ADMIN", "SETPCAP"]
       privileged: true
 
+    hostname: "{{ HELMRELEASE_NAME }}"
+
     configMaps:
       config:
         enabled: true
