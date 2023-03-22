@@ -21,6 +21,7 @@ Optional:
 
 See `./example`.
 
-## Open Points
+## Limitation
 
-We have different namespaces for our PVC but can only start one pod for the samba port. Maybe we could use the cross namespace data source with Kubernetes `v1.26+`, but this require implementation from longhorn side. See also https://kubernetes.io/docs/concepts/storage/persistent-volumes/#cross-namespace-data-sources. Currently i only need to share one namespace so no problem for now.
+- **Single Node**: The container is currently designed to run in a single node cluster. Multi node cluster could lead to pvc access problems.
+- **Single Namespace**: We have different namespaces for our PVC but can only start one pod for the samba port. Maybe we could use the cross namespace data source with Kubernetes `v1.26+`, but this require implementation from longhorn side. See also https://kubernetes.io/docs/concepts/storage/persistent-volumes/#cross-namespace-data-sources. Currently i only need to share one namespace so no problem for now.
