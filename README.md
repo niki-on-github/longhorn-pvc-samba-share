@@ -2,7 +2,7 @@
 
 Make all longhorn PVC accessible with a samba container.
 
-This container is indented to us in conjunction with my [longhorn-volume-manager](https://github.com/niki-on-github/longhorn-volume-manager) container.
+This container is indented to use in conjunction with my [longhorn-volume-manager](https://github.com/niki-on-github/longhorn-volume-manager) container.
 
 ## Variables
 
