@@ -50,19 +50,32 @@ spec:
                 uid: 0
                 gid: 0
                 password: "{{ SAMBA_PASSWORD }}"
+              - user: smb
+                group: smb
+                uid: 1000
+                gid: 1000
+                password: "{{ SAMBA_PASSWORD }}"
 
             global:
               - "force user = root"
               - "force group = root"
 
             share:
-              - name: samba
-                path: /srv
+              - name: longhorn
+                path: /srv/longhorn
                 browsable: yes
                 readonly: no
                 guestok: no
-                validusers: root
-                writelist: root
+                validusers: root,smb
+                writelist: root,smb
+                veto: no
+              - name: host-volume
+                path: /srv/host-volume
+                browsable: yes
+                readonly: no
+                guestok: no
+                validusers: root,smb
+                writelist: root,smb
                 veto: no
 
     persistence:

@@ -104,10 +104,11 @@ class SambaServerDeployment:
                 "mountPath": "/srv/longhorn/" + k
             }
 
-
+        host_volume_count = 0
         if self.env["AFFINITY_HOSTNAME"] != "":
             for k in self.env["ADDITIONAL_HOST_VOLUME_PATHS"]:
                 if len(k) > 1:
+                    host_volume_count += 1
                     basename = os.path.basename(k)
                     self.logger.info("add aditional host volume %s:%s", basename, k)
                     self.helm_release["spec"]["values"]["persistence"]["host-volume-"+basename] = {
@@ -132,6 +133,14 @@ class SambaServerDeployment:
                         }
                     }
                 }
+
+        if host_volume_count == 0:
+            self.logger.info("No host volumes specified create empty host volume mount")
+            self.helm_release["spec"]["values"]["persistence"]["empty-host-volume"] = {
+                "enabled": True,
+                "type": "emptyDir",
+                "mountPath": "/srv/host-volume/"
+            }
 
         with open(dest_name, 'w') as f:
             yaml.dump(self.helm_release, f)
