@@ -9,7 +9,7 @@ This container is indented to use in conjunction with my [longhorn-volume-manage
 Required:
 
 - `NAMESPACE`: The namespace where to deploy the samba container
-- `SAMBA_PASSWORD`: The samba password. The default user is `smb` and the share name is `samba`
+- `SAMBA_PASSWORD`: The samba password. For the credential take a look at `./default-helmrelease-template.yaml.j2`
 - `SVC_SAMBA_IP`: The SVC IP for the samba server.
 
 Optional:
