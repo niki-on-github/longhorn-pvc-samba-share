@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: "{{ BJWS_CHART_VERSION }}"
+      version: 1.3.2
       interval: 1h
       sourceRef:
         kind: HelmRepository
@@ -20,7 +20,7 @@ spec:
       nameOverride: "{{ HELMRELEASE_NAME }}"
 
     image:
-      repository: "{{ IMAGE_REPOSITORY }}"
+      repository: "ghcr.io/crazy-max/samba"
       tag: "{{ IMAGE_TAG }}"
 
     service:

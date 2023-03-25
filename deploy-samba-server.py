@@ -19,15 +19,16 @@ class SambaServerDeployment:
 
     def _load_environment_variables(self):
         self.env = {
-            "IMAGE_REPOSITORY": os.getenv("IMAGE_REPOSITORY", "ghcr.io/crazy-max/samba"),
             "IMAGE_TAG": os.getenv("IMAGE_TAG", "4.16.8"),
-            "BJWS_CHART_VERSION": os.getenv("BJWS_CHART_VERSION", "1.3.2"),
             "HELMRELEASE_NAME": os.getenv("HELMRELEASE_NAME", "lh-samba"),
+            "HELMRELEASE_TEMPLATE_FILE": os.getenv("HELMRELEASE_TEMPLATE_FILE", "default-helmrelease-template.yaml.j2"),
             "AFFINITY_HOSTNAME": os.getenv("AFFINITY_HOSTNAME", ""),
             "ADDITIONAL_HOST_VOLUME_PATHS": os.getenv("ADDITIONAL_HOST_VOLUME_PATHS", "").split(";")
         }
 
         if len(self.env["HELMRELEASE_NAME"]) > 13:
+            # Because the length of the NetBios name for Samba is limited to 15 characters, you must ensure that the DNS hostname you specify
+            # is no longer than 13 characters!
             raise ValueError("The value for HELMRELEASE_NAME can max have 13 characters")
 
         for item in ["SVC_SAMBA_IP", "SAMBA_PASSWORD", "NAMESPACE"]:
@@ -40,9 +41,11 @@ class SambaServerDeployment:
 
 
     def _load_helmrelease_template(self):
+        if not os.path.exists(self.env["HELMRELEASE_TEMPLATE_FILE"]):
+            raise FileNotFoundError("Template file {} not found!".format(self.env["HELMRELEASE_TEMPLATE_FILE"]))
         templateLoader = jinja2.FileSystemLoader(searchpath="./")
         templateEnv = jinja2.Environment(loader=templateLoader)
-        template = templateEnv.get_template("template.yaml.j2")
+        template = templateEnv.get_template(self.env["HELMRELEASE_TEMPLATE_FILE"])
         self.helm_release = yaml.safe_load(template.render(**self.env))
 
 
