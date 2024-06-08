@@ -1,5 +1,8 @@
 # Longhorn PVC Samba Share
 
+> [!WARNING]  
+> This repository is/was a proof of concept which is no longer used in my homelab ([nixos-k3s](https://github.com/niki-on-github/nixos-k3s)).
+
 Make all longhorn PVC accessible with a samba container.
 
 This container is indented to use in conjunction with my [longhorn-volume-manager](https://github.com/niki-on-github/longhorn-volume-manager) container.
